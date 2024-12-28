@@ -1,0 +1,41 @@
+---
+trigger:
+  - main
+pool:
+  vmImage: windows-latest
+variables:
+  solution: "**/*.sln"
+  buildPlatform: Any CPU
+  buildConfiguration: Release
+  azureWebAppName: wpmappservice12
+  MyAzureConnection: 'storage-sc'
+steps:
+  - task: NuGetToolInstaller@1
+  - task: NuGetCommand@2
+    inputs:
+      restoreSolution: $(solution)
+  - task: VSBuild@1
+    inputs:
+      solution: $(solution)
+      platform: $(buildPlatform)
+      configuration: $(buildConfiguration)
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: publish
+      projects: $(solution)
+      arguments: --configuration $(buildConfiguration) --output
+        $(Build.ArtifactStagingDirectory)
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)
+      ArtifactName: drop
+      publishLocation: Container
+  - task: AzureWebApp@1
+    inputs:
+      azureSubscription: 'storage-sc'
+      appType: 'webApp'
+      appName: 'wpmappservice'
+      package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
+      slotName: 'dev'
+    
+      
